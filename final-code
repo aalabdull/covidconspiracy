@@ -1,0 +1,75 @@
+import tweepy
+from tweepy import OAuthHandler
+import pandas as pd
+
+consumer_key = "xxxx"
+consumer_secret = "xxxx"
+access_token = "xxxx"
+access_token_secret = "xxxx"
+
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+
+api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+tweets = []
+
+count = 1
+searchterms = "coronavirus OR covid19 vaccine -filter:retweets"
+
+for tweet in tweepy.Cursor(api.search, q=searchterms, lang="en", count=450, tweet_mode="extended", since="2020-11-09").items(200000):
+   print(count)
+   count =+ 1
+
+   try:
+      data = [tweet.id, tweet.full_text, tweet.user._json['screen_name'],tweet.user._json['name']]
+      data = tuple(data)
+      tweets.append(data)
+
+   except tweepy.TweepError as e:
+      print(e.reason)
+      continue
+
+   except StopIteration:
+      break
+
+df = pd.DataFrame(tweets, columns = ['tweet_id', 'tweet_text', 'screen_name', 'name'])                            
+
+df.to_csv("finalrawdata-all.csv", index=False)
+
+print("Raw data complete. ")
+
+import csv
+from collections import Counter
+#from collections import defaultdict
+import pandas as pd
+#import WordCloud
+
+words= []
+conspiracy_keywords = ['conspiracy', 'covert', 'adverse', 'fraud', 'lies', 'scared', 'afraid', 'free', 'freedom', 'bioweapon', 'plandemic', 'unethical', 'control', 'gps', 'hoax', 'rushed', 'sheep', 'fertility', 'myth', 'scamdemic','harmful', 'euthanasia', 'magic', 'unreliable','toxic', 'tracker', 'dna', 'rna', 'deceptive', 'plot', 'secret', 'autism', 'international', 'foreign', 'agents', 'puppet', 'China', 'Trump', '5g', 'dangerous', 'risky', 'unsafe', 'corruption', 'shadowy', 'government', 'chip', 'microchip', 'Bill', 'Gates', 'implant', 'engineered', 'warning', 'profit', 'trackable', 'fatal', 'military', 'ingredients', 'malicious', 'ulterior', 'Russia', 'Putin']
+
+with open('finalrawdata-all.csv','rt', errors="ignore") as csvfile:
+    reader = csv.reader(csvfile)
+    next(reader)
+    for row in reader:
+         csv_words = row[1].lower().split(" ")
+         for i in csv_words:
+             words.append(i)
+
+print("Done step 1. ")
+
+words_counted = []
+
+for i in words:
+    if i in conspiracy_keywords:
+        x = words.count(i)
+        words_counted.append((i,x))
+       
+setofwords = set(words_counted)
+print(set(words_counted))
+
+df = pd.DataFrame(setofwords, columns = ['word', 'count'])
+
+df.to_csv("finalset-oneword.csv", header=False, index=False)
+
+print("Done step 2. ")
